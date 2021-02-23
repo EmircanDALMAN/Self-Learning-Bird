@@ -1,6 +1,8 @@
 import React, { Component } from 'react';
+import { NeuralNetwork } from './neural/nn';
 import './App.css';
 
+const TOTAL_BIRDS = 100;
 const HEIGHT = 500;
 const WIDTH = 800;
 const PIPE_WIDTH = 60;
@@ -14,6 +16,8 @@ class Bird {
     this.y = 150;
     this.gravity = 0;
     this.velocity = 0.1;
+    this.isDead = false;
+    this.brain = new NeuralNetwork(2, 5, 1);
   }
   draw() {
     this.ctx.fillStyle = 'red';
@@ -26,7 +30,36 @@ class Bird {
     this.gravity += this.velocity;
     this.gravity = Math.min(4, this.gravity);
     this.y += this.gravity;
+
+    if (this.y < 0) {
+      this.y = 0;
+    }
+    else if (this.y > HEIGHT) {
+      this.y = HEIGHT;
+    }
+
+    this.think();
   }
+
+  think = () => {
+    // Inputs
+    // [bird.x , bird.y]
+    // [closestPipe.x, pipe.y]
+    // [closestPipe.x, pipe.y + pipe.height]
+    const inputs = [
+      this.x / WIDTH,
+      this.y / HEIGHT,
+    ];
+
+    //range 0,1
+    const output = this.brain.predict(inputs);
+    if (output[0] < 0.5) {
+      this.jump();
+    }
+  }
+
+
+
   jump = () => {
     this.gravity = -4;
   }
@@ -66,17 +99,18 @@ class App extends Component {
     this.pipes = [];
   }
   componentDidMount() {
-    document.addEventListener('keydown', this.onkeydown);
-    const ctx = this.getCtx();
+    // document.addEventListener('keydown', this.onkeydown);
     this.pipes = this.generatePipes();
-    this.birds = [new Bird(ctx)];
+    this.birds = this.generateBirds();
     this.loop = setInterval(this.gameLoop, 1000 / FPS);
   }
-  onkeydown = (e) => {
-    if (e.code === 'Space') {
-      this.birds[0].jump();
-    }
-  }
+
+  // USER ONLY MODE
+  // onkeydown = (e) => {
+  //   if (e.code === 'Space') {
+  //     this.birds[0].jump();
+  //   }
+  // }
 
   getCtx = () => this.canvasRef.current.getContext('2d');
 
@@ -87,6 +121,14 @@ class App extends Component {
     const secondPipe = new Pipe(ctx, secondPipeHeight, 80);
     return [firstPipe, secondPipe];
   }
+  generateBirds = () => {
+    const birds = [];
+    const ctx = this.getCtx();
+    for (let i = 0; i < TOTAL_BIRDS; i += 1) {
+      birds.push(new Bird(ctx));
+    }
+    return birds;
+  };
 
   gameLoop = () => {
     this.update();
@@ -100,29 +142,30 @@ class App extends Component {
     }
     //Update Pipes Position
     this.pipes.forEach(pipe => pipe.update());
-    this.pipes = this.pipes.filter(pipe => !pipe.isDead);
 
     //Update Birds Position
     this.birds.forEach(bird => bird.update());
-    if (this.isGameOver()) {
-      alert('Game Over!');
-      clearInterval(this.loop);
-    }
+
+    //delete off-screen pipes
+    this.pipes = this.pipes.filter(pipe => !pipe.isDead);
+
+    //delete dead birds
+    this.updateBirdDeadState();
+    this.birds = this.birds.filter(bird => !bird.isDead);
+
   }
-  isGameOver = () => {
+  updateBirdDeadState = () => {
     //Detect Collisions
-    let gameOVer = false;
     this.birds.forEach(bird => {
       this.pipes.forEach(pipe => {
         if (
           bird.y < 0 || bird.y > HEIGHT ||
-          (bird.x > pipe.x && bird.x < pipe.x + pipe.width && bird.y > pipe.y && bird.y < pipe.y + pipe.height)
-        ) {
-          gameOVer = true;
+          (bird.x >= pipe.x && bird.x <= pipe.x + pipe.width
+            && bird.y >= pipe.y && bird.y <= pipe.y + pipe.height)) {
+          bird.isDead = true;
         }
       });
     });
-    return gameOVer
   }
   draw() {
     const ctx = this.canvasRef.current.getContext('2d');
@@ -140,6 +183,7 @@ class App extends Component {
           style={{ marginTop: '24px', border: '1px solid #c3c3c3' }}>
           Your Browser does not support the canvas element!
       </canvas>
+        <div onClick={() => this.setState({})} > {this.frameCount} </div>
       </div>
     );
   }
