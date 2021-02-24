@@ -2,4 +2,6 @@
 
 1-) Run 'npm install' code in Terminal <br>
 2-) Run 'npm start' code in Terminal<br>
-3-) open localhost:3000 in your browser
+3-) open localhost:3000 in your browser<br>
+
+<bold>Self-learning bird with Artificial Intelligence</bold>
