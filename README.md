@@ -4,4 +4,4 @@
 2-) Run 'npm start' code in Terminal<br>
 3-) open localhost:3000 in your browser<br>
 
-<bold>Self-learning bird with Artificial Intelligence</bold>
+<strong>Self-learning bird with Artificial Intelligence</strong>
